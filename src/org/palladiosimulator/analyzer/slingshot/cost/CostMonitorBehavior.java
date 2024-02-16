@@ -77,9 +77,10 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
 				final Calculator calculator = setupCalculator(rcmp, calculatorFactory, eiCfg);
 
+				final ContainerCostProbe probe = this.probes.get(eiCfg.getUnit());
 
 				return Result.of(new CalculatorRegistered(calculator),
-						new IntervalPassed(rcmp.getResourceContainer(), 0));
+						new IntervalPassed(rcmp.getResourceContainer(), probe.getInterval()));
 
 			} else {
 				System.out.println("Foo");

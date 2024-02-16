@@ -1,8 +1,9 @@
 package org.palladiosimulator.analyzer.slingshot.cost.probes;
 
 import javax.measure.Measure;
-import javax.measure.quantity.Dimensionless;
 
+import org.jscience.economics.money.Currency;
+import org.jscience.economics.money.Money;
 import org.palladiosimulator.analyzer.slingshot.common.events.DESEvent;
 import org.palladiosimulator.analyzer.slingshot.cost.events.IntervalPassed;
 import org.palladiosimulator.analyzer.slingshot.monitor.probes.EventBasedListProbe;
@@ -15,7 +16,7 @@ import org.palladiosimulator.semanticspd.ElasticInfrastructureCfg;
  * @author Sarah Stieß
  *
  */
-public final class ContainerCostProbe extends EventBasedListProbe<Double, Dimensionless> {
+public final class ContainerCostProbe extends EventBasedListProbe<Double, Money> {
 
 	private final ElasticInfrastructureCfg elasticInfrastructureConfiguration;
 	
@@ -49,7 +50,7 @@ public final class ContainerCostProbe extends EventBasedListProbe<Double, Dimens
 	}
 
 	@Override
-	public Measure<Double, Dimensionless> getMeasurement(final DESEvent event) {
+	public Measure<Double, Money> getMeasurement(final DESEvent event) {
 		if (event instanceof IntervalPassed intervalPassed) {
 
 			assert elasticInfrastructureConfiguration.getElements()
@@ -57,7 +58,7 @@ public final class ContainerCostProbe extends EventBasedListProbe<Double, Dimens
 			
 			int replicas = elasticInfrastructureConfiguration.getElements().size();
 			
-			return Measure.valueOf(replicas * cost, Dimensionless.UNIT);
+			return Measure.valueOf(replicas * cost, Currency.EUR);
 		}
 		throw new IllegalArgumentException(String.format("Wrong eventype. Expected %s but got %s.",
 				IntervalPassed.class.getSimpleName(), event.getClass().getSimpleName()));
