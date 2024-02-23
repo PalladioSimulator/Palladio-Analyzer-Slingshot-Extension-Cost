@@ -2,9 +2,11 @@ package org.palladiosimulator.analyzer.slingshot.cost;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.inject.Inject;
 
+import org.apache.log4j.Logger;
 import org.palladiosimulator.analyzer.slingshot.common.annotations.Nullable;
 import org.palladiosimulator.analyzer.slingshot.common.events.AbstractSimulationEvent;
 import org.palladiosimulator.analyzer.slingshot.core.extension.SimulationBehaviorExtension;
@@ -21,6 +23,7 @@ import org.palladiosimulator.analyzer.slingshot.monitor.data.events.modelvisited
 import org.palladiosimulator.analyzer.slingshot.monitor.data.events.modelvisited.MonitorModelVisited;
 import org.palladiosimulator.edp2.models.measuringpoint.MeasuringPoint;
 import org.palladiosimulator.edp2.util.MetricDescriptionUtility;
+import org.palladiosimulator.mdsdprofiles.api.StereotypeAPI;
 import org.palladiosimulator.metricspec.constants.MetricDescriptionConstants;
 import org.palladiosimulator.monitorrepository.MeasurementSpecification;
 import org.palladiosimulator.pcm.resourceenvironment.ResourceContainer;
@@ -44,6 +47,8 @@ import org.palladiosimulator.semanticspd.ElasticInfrastructureCfg;
 		IntervalPassed.class }, cardinality = EventCardinality.MANY)
 public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
+	private final static Logger LOGGER = Logger.getLogger(CostMonitorBehavior.class);
+
 	private final IGenericCalculatorFactory calculatorFactory;
 
 	private final Map<ResourceContainer, ContainerCostProbe> probes;
@@ -62,29 +67,38 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 		final MeasurementSpecification spec = m.getEntity();
 		final MeasuringPoint measuringPoint = spec.getMonitor().getMeasuringPoint();
 
-		if (measuringPoint instanceof ResourceContainerMeasuringPoint rcmp) { 
-
-			if (MetricDescriptionUtility.metricDescriptionIdsEqual(spec.getMetricDescription(),
+		if (measuringPoint instanceof ResourceContainerMeasuringPoint rcmp
+				&& MetricDescriptionUtility.metricDescriptionIdsEqual(spec.getMetricDescription(),
 					MetricDescriptionConstants.COST_OF_RESOURCE_CONTAINERS)) {
 				
 				
-				ElasticInfrastructureCfg eiCfg = semanticConfiguration.getTargetCfgs().stream()
+				Optional<ElasticInfrastructureCfg>  eiCfg = semanticConfiguration.getTargetCfgs().stream()
 						.filter(cfg -> cfg instanceof ElasticInfrastructureCfg c)
 						.map(cfg -> (ElasticInfrastructureCfg) cfg)
 						.filter(cfg -> cfg.getUnit().equals(rcmp.getResourceContainer()))
-						.findFirst().orElseThrow();
+						.findFirst();
+
+				if (eiCfg.isEmpty()) {
+					LOGGER.debug(String.format(
+							"Not registering Calculator for %s, no ElasticInfrasturctureConfiguration with matching Unit.",
+							rcmp.getStringRepresentation()));
+					return Result.empty();
+				}
 				
+				if (StereotypeAPI.getAppliedStereotypes(eiCfg.get().getUnit()).isEmpty()) {
+					LOGGER.debug(String.format(
+							"Not registering Calculator for %s, because there are no Costs defined for the Resoruce Container.",
+							rcmp.getStringRepresentation()));
+					return Result.empty();
+				}
 
-				final Calculator calculator = setupCalculator(rcmp, calculatorFactory, eiCfg);
+				final Calculator calculator = setupCalculator(rcmp, calculatorFactory, eiCfg.get());
 
-				final ContainerCostProbe probe = this.probes.get(eiCfg.getUnit());
+				final ContainerCostProbe probe = this.probes.get(eiCfg.get().getUnit());
 
 				return Result.of(new CalculatorRegistered(calculator),
 						new IntervalPassed(rcmp.getResourceContainer(), probe.getInterval()));
 
-			} else {
-				System.out.println("Foo");
-			}
 		}
 		return Result.empty();
 	}
