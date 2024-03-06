@@ -26,7 +26,6 @@ import org.palladiosimulator.edp2.util.MetricDescriptionUtility;
 import org.palladiosimulator.mdsdprofiles.api.StereotypeAPI;
 import org.palladiosimulator.metricspec.constants.MetricDescriptionConstants;
 import org.palladiosimulator.monitorrepository.MeasurementSpecification;
-import org.palladiosimulator.pcm.resourceenvironment.ResourceContainer;
 import org.palladiosimulator.pcmmeasuringpoint.ResourceContainerMeasuringPoint;
 import org.palladiosimulator.probeframework.calculator.Calculator;
 import org.palladiosimulator.probeframework.calculator.DefaultCalculatorProbeSets;
@@ -51,7 +50,7 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
 	private final IGenericCalculatorFactory calculatorFactory;
 
-	private final Map<ResourceContainer, ContainerCostProbe> probes;
+	private final Map<String, ContainerCostProbe> probes;
 	private final Configuration semanticConfiguration;
 
 	@Inject
@@ -94,7 +93,7 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
 				final Calculator calculator = setupCalculator(rcmp, calculatorFactory, eiCfg.get());
 
-				final ContainerCostProbe probe = this.probes.get(eiCfg.get().getUnit());
+				final ContainerCostProbe probe = this.probes.get(eiCfg.get().getUnit().getId());
 
 				return Result.of(new CalculatorRegistered(calculator),
 						new IntervalPassed(rcmp.getResourceContainer(), probe.getInterval()));
@@ -105,7 +104,7 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
 	@Subscribe
 	public Result<AbstractSimulationEvent> onIntevalPassed(final IntervalPassed intervalPassed) {
-		final ContainerCostProbe probe = this.probes.get(intervalPassed.getTargetResourceContainer());
+		final ContainerCostProbe probe = this.probes.get(intervalPassed.getTargetResourceContainer().getId());
 
 		probe.takeMeasurement(intervalPassed);
 
@@ -127,7 +126,7 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
 		ContainerCostProbe newProbe = new ContainerCostProbe(eiCfg);
 
-		this.probes.putIfAbsent(eiCfg.getUnit(), newProbe);
+		this.probes.putIfAbsent(eiCfg.getUnit().getId(), newProbe);
 
 		return calculatorFactory.buildCalculator(MetricDescriptionConstants.COST_OVER_TIME, measuringPoint,
 				DefaultCalculatorProbeSets.createSingularProbeConfiguration(newProbe));
