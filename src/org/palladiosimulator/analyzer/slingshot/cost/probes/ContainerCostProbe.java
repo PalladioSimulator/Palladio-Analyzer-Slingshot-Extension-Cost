@@ -5,7 +5,7 @@ import javax.measure.Measure;
 import org.jscience.economics.money.Currency;
 import org.jscience.economics.money.Money;
 import org.palladiosimulator.analyzer.slingshot.common.events.DESEvent;
-import org.palladiosimulator.analyzer.slingshot.cost.events.IntervalPassed;
+import org.palladiosimulator.analyzer.slingshot.cost.events.TakeCostMeasurement;
 import org.palladiosimulator.analyzer.slingshot.monitor.probes.EventBasedListProbe;
 import org.palladiosimulator.mdsdprofiles.api.StereotypeAPI;
 import org.palladiosimulator.metricspec.constants.MetricDescriptionConstants;
@@ -13,13 +13,16 @@ import org.palladiosimulator.semanticspd.ElasticInfrastructureCfg;
 
 /**
  *
+ * The Metric description we use is COST_OVER_TIME, but actually, this one
+ * disregards time. this is just cost at a point in time.
+ *
  * @author Sarah Stieß
  *
  */
 public final class ContainerCostProbe extends EventBasedListProbe<Double, Money> {
 
 	private final ElasticInfrastructureCfg elasticInfrastructureConfiguration;
-	
+
 	final double cost;
 	final double interval;
 
@@ -28,44 +31,48 @@ public final class ContainerCostProbe extends EventBasedListProbe<Double, Money>
 	static final String TAG_COST = "amount";
 
 	/**
-	 * 
+	 *
 	 * Constructs a .
 	 */
 	public ContainerCostProbe(final ElasticInfrastructureCfg cfg) {
 		super(MetricDescriptionConstants.COST_OVER_TIME);
 		this.elasticInfrastructureConfiguration = cfg;
-		
+
 
 		if (StereotypeAPI.getAppliedStereotypes(this.elasticInfrastructureConfiguration.getUnit()).isEmpty()) {
 			throw new IllegalArgumentException(
 					String.format("Expected Stereotypes on ResourceContainer %s, but found none.",
 							this.elasticInfrastructureConfiguration.getUnit().getEntityName()));
 		}
-		
+
 		this.interval = StereotypeAPI.getTaggedValue(this.elasticInfrastructureConfiguration.getUnit(), TAG_INTERVAL,
 				STEREOTYPE);
 		this.cost = StereotypeAPI.getTaggedValue(this.elasticInfrastructureConfiguration.getUnit(), TAG_INTERVAL,
 				STEREOTYPE);
-		
+
 	}
 
 	@Override
 	public Measure<Double, Money> getMeasurement(final DESEvent event) {
-		if (event instanceof IntervalPassed intervalPassed) {
+		if (event instanceof final TakeCostMeasurement intervalPassed) {
 
 			assert elasticInfrastructureConfiguration.getElements()
-					.contains(intervalPassed.getTargetResourceContainer());
-			
-			int replicas = elasticInfrastructureConfiguration.getElements().size();
-			
+			.contains(intervalPassed.getTargetResourceContainer())
+			: String.format("Resourcecontainer %s[%s] is not in given configuration %s",
+					intervalPassed.getTargetResourceContainer().getEntityName(),
+					intervalPassed.getTargetResourceContainer().getId(),
+					elasticInfrastructureConfiguration.toString());
+
+			final int replicas = elasticInfrastructureConfiguration.getElements().size();
+
 			return Measure.valueOf(replicas * cost, Currency.EUR);
 		}
 		throw new IllegalArgumentException(String.format("Wrong eventype. Expected %s but got %s.",
-				IntervalPassed.class.getSimpleName(), event.getClass().getSimpleName()));
+				TakeCostMeasurement.class.getSimpleName(), event.getClass().getSimpleName()));
 	}
 
 	/**
-	 * 
+	 *
 	 * @return interval between two cost measurements
 	 */
 	public double getInterval() {

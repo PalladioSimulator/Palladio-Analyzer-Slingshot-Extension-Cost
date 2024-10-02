@@ -10,7 +10,7 @@ import org.apache.log4j.Logger;
 import org.palladiosimulator.analyzer.slingshot.common.annotations.Nullable;
 import org.palladiosimulator.analyzer.slingshot.common.events.AbstractSimulationEvent;
 import org.palladiosimulator.analyzer.slingshot.core.extension.SimulationBehaviorExtension;
-import org.palladiosimulator.analyzer.slingshot.cost.events.IntervalPassed;
+import org.palladiosimulator.analyzer.slingshot.cost.events.TakeCostMeasurement;
 import org.palladiosimulator.analyzer.slingshot.cost.probes.ContainerCostProbe;
 import org.palladiosimulator.analyzer.slingshot.eventdriver.annotations.Subscribe;
 import org.palladiosimulator.analyzer.slingshot.eventdriver.annotations.eventcontract.EventCardinality;
@@ -41,9 +41,9 @@ import org.palladiosimulator.semanticspd.ElasticInfrastructureCfg;
  *
  */
 @OnEvent(when = MonitorModelVisited.class, then = { CalculatorRegistered.class,
-		IntervalPassed.class }, cardinality = EventCardinality.MANY)
-@OnEvent(when = IntervalPassed.class, then = { ProbeTaken.class,
-		IntervalPassed.class }, cardinality = EventCardinality.MANY)
+		TakeCostMeasurement.class }, cardinality = EventCardinality.MANY)
+@OnEvent(when = TakeCostMeasurement.class, then = { ProbeTaken.class,
+		TakeCostMeasurement.class }, cardinality = EventCardinality.MANY)
 public class CostMonitorBehavior implements SimulationBehaviorExtension {
 
 	private final static Logger LOGGER = Logger.getLogger(CostMonitorBehavior.class);
@@ -101,20 +101,20 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 			final ContainerCostProbe probe = this.probes.get(eiCfg.get().getUnit().getId());
 
 			return Result.of(new CalculatorRegistered(calculator),
-					new IntervalPassed(rcmp.getResourceContainer(), probe.getInterval()));
+					new TakeCostMeasurement(0.0, rcmp.getResourceContainer(), probe.getInterval()));
 
 		}
 		return Result.empty();
 	}
 
 	@Subscribe
-	public Result<AbstractSimulationEvent> onIntevalPassed(final IntervalPassed intervalPassed) {
+	public Result<AbstractSimulationEvent> onIntevalPassed(final TakeCostMeasurement intervalPassed) {
 		final ContainerCostProbe probe = this.probes.get(intervalPassed.getTargetResourceContainer().getId());
 
 		probe.takeMeasurement(intervalPassed);
 
 		final ProbeTaken probeTaken = new ProbeTaken(ProbeTakenEntity.builder().withProbe(probe).build());
-		final IntervalPassed nextIntervalPassed = new IntervalPassed(intervalPassed);
+		final TakeCostMeasurement nextIntervalPassed = new TakeCostMeasurement(intervalPassed);
 
 		return Result.of(probeTaken, nextIntervalPassed);
 	}
