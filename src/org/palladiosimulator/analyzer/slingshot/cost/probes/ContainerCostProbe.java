@@ -26,7 +26,8 @@ public final class ContainerCostProbe extends EventBasedListProbe<Double, Money>
 	final double cost;
 	final double interval;
 
-	static final String STEREOTYPE = "Price";
+	static final String STEREOTYPE_COST = "Price";
+	static final String STEREOTYPE_COSTREPORT = "CostReport";
 	static final String TAG_INTERVAL = "interval";
 	static final String TAG_COST = "amount";
 
@@ -45,10 +46,10 @@ public final class ContainerCostProbe extends EventBasedListProbe<Double, Money>
 							this.elasticInfrastructureConfiguration.getUnit().getEntityName()));
 		}
 
-		this.interval = StereotypeAPI.getTaggedValue(this.elasticInfrastructureConfiguration.getUnit(), TAG_INTERVAL,
-				STEREOTYPE);
-		this.cost = StereotypeAPI.getTaggedValue(this.elasticInfrastructureConfiguration.getUnit(), TAG_INTERVAL,
-				STEREOTYPE);
+		this.interval = StereotypeAPI.getTaggedValue(this.elasticInfrastructureConfiguration.getResourceEnvironment(),
+				TAG_INTERVAL, STEREOTYPE_COSTREPORT);
+		this.cost = StereotypeAPI.getTaggedValue(this.elasticInfrastructureConfiguration.getUnit(), TAG_COST,
+				STEREOTYPE_COST);
 
 	}
 
