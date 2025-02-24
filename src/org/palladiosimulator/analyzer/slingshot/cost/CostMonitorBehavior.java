@@ -12,6 +12,7 @@ import org.palladiosimulator.analyzer.slingshot.common.events.AbstractSimulation
 import org.palladiosimulator.analyzer.slingshot.core.extension.SimulationBehaviorExtension;
 import org.palladiosimulator.analyzer.slingshot.cost.events.TakeCostMeasurement;
 import org.palladiosimulator.analyzer.slingshot.cost.probes.ContainerCostProbe;
+import org.palladiosimulator.analyzer.slingshot.cost.provider.CostInfo;
 import org.palladiosimulator.analyzer.slingshot.eventdriver.annotations.Subscribe;
 import org.palladiosimulator.analyzer.slingshot.eventdriver.annotations.eventcontract.EventCardinality;
 import org.palladiosimulator.analyzer.slingshot.eventdriver.annotations.eventcontract.OnEvent;
@@ -23,7 +24,6 @@ import org.palladiosimulator.analyzer.slingshot.monitor.data.events.modelvisited
 import org.palladiosimulator.analyzer.slingshot.monitor.data.events.modelvisited.MonitorModelVisited;
 import org.palladiosimulator.edp2.models.measuringpoint.MeasuringPoint;
 import org.palladiosimulator.edp2.util.MetricDescriptionUtility;
-import org.palladiosimulator.mdsdprofiles.api.StereotypeAPI;
 import org.palladiosimulator.metricspec.constants.MetricDescriptionConstants;
 import org.palladiosimulator.monitorrepository.MeasurementSpecification;
 import org.palladiosimulator.pcmmeasuringpoint.ResourceContainerMeasuringPoint;
@@ -53,11 +53,14 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 	private final Map<String, ContainerCostProbe> probes;
 	private final Configuration semanticConfiguration;
 
+	private final CostInfo costInfo;
+
 	@Inject
 	public CostMonitorBehavior(final IGenericCalculatorFactory calculatorFactory,
-			final @Nullable Configuration semanticConfiguration) {
+			final @Nullable Configuration semanticConfiguration, final CostInfo costInfo) {
 		this.calculatorFactory = calculatorFactory;
 		this.semanticConfiguration = semanticConfiguration;
+		this.costInfo = costInfo;
 		this.probes = new HashMap<>();
 	}
 
@@ -88,13 +91,13 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 						rcmp.getStringRepresentation()));
 				return Result.empty();
 			}
-
-			if (StereotypeAPI.getAppliedStereotypes(eiCfg.get().getUnit()).isEmpty()) {
-				LOGGER.debug(String.format(
-						"Not registering Calculator for %s, because there are no Costs defined for the Resoruce Container.",
-						rcmp.getStringRepresentation()));
-				return Result.empty();
-			}
+			
+//			if (StereotypeAPI.getAppliedStereotypes(eiCfg.get().getUnit()).isEmpty()) {
+//				LOGGER.debug(String.format(
+//						"Not registering Calculator for %s, because there are no Costs defined for the Resource Container.",
+//						rcmp.getStringRepresentation()));
+//				return Result.empty();
+//			}
 
 			final Calculator calculator = setupCalculator(rcmp, calculatorFactory, eiCfg.get());
 
@@ -129,7 +132,7 @@ public class CostMonitorBehavior implements SimulationBehaviorExtension {
 	public Calculator setupCalculator(final MeasuringPoint measuringPoint,
 			final IGenericCalculatorFactory calculatorFactory, final ElasticInfrastructureCfg eiCfg) {
 
-		final ContainerCostProbe newProbe = new ContainerCostProbe(eiCfg);
+		final ContainerCostProbe newProbe = new ContainerCostProbe(eiCfg, this.costInfo);
 
 		this.probes.putIfAbsent(eiCfg.getUnit().getId(), newProbe);
 
