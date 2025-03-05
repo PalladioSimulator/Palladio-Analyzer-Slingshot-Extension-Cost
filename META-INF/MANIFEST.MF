@@ -12,6 +12,7 @@ Require-Bundle: org.palladiosimulator.analyzer.slingshot.monitor,
  org.palladiosimulator.monitorrepository,
  org.palladiosimulator.pcm.edp2.measuringpoint,
  org.palladiosimulator.edp2.util,
- org.apache.log4j
-Export-Package: org.palladiosimulator.analyzer.slingshot.cost.events,
- org.palladiosimulator.analyzer.slingshot.cost.provider
+ org.apache.log4j,
+ org.palladiosimulator.mdsdprofiles.api;bundle-version="5.1.0",
+ org.palladiosimulator.cost.profile;bundle-version="5.1.0"
+Export-Package: org.palladiosimulator.analyzer.slingshot.cost.events
